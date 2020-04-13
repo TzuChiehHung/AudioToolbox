@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 import pyaudio
 import wave
 import numpy as np
@@ -6,14 +9,14 @@ from scipy import fftpack
 from scipy.signal import hanning, welch
 
 
-class Visualization(object):
+class AudioVisualization(object):
 
     def __init__(self, audio):
         self.audio = audio
         self.fig, self.ax = plt.subplots(3, figsize=(8,6))
 
         xt = np.arange(0, audio.chunk)
-        yt = y_p = np.zeros(audio.chunk)
+        yt = np.zeros(audio.chunk)
         xf, yf = fft(audio)
         xp, yp = psd(audio)
 
@@ -22,6 +25,7 @@ class Visualization(object):
         self.ax[0].set_title('Audio Waveform')
         self.ax[0].set_xlabel('samples')
         self.ax[0].set_ylabel('volume')
+        self.ax[0].set_xlim(0, audio.chunk)
         self.ax[0].set_ylim(-1, 1)
 
         # ax[1] - fft
@@ -59,14 +63,13 @@ class Visualization(object):
                 self.fig.canvas.draw()
                 self.fig.canvas.flush_events()
                 
-            audio.stop()
+            self.audio.stop()
         except KeyboardInterrupt:
-            audio.stop()
+            self.audio.stop()
 
-class FileStream(object):
+class AudioFileStream(object):
 
     def __init__(self, filename, chunk=1024, output_device=None):
-        FORMAT = pyaudio.paInt16
         self.filename = filename
         self.wavfile = wave.open(self.filename, 'rb')
 
@@ -89,7 +92,7 @@ class FileStream(object):
             channels=self.channels,
             output=True,
             output_device_index=self.output_device_index,
-            frames_per_buffer=self.chunk,
+            frames_per_buffer=self.chunk*2,
             stream_callback=self.callback)
         self.data = np.zeros(self.chunk)
 
@@ -110,7 +113,7 @@ class FileStream(object):
         self.stream.close()
         self.pyaudio.terminate()
 
-class LiveStream(object):
+class AudioLiveStream(object):
 
     def __init__(self, sample_rate=44100, channels=1, chunk=1024, input_device=None, output_device=None):
         FORMAT = pyaudio.paInt16

@@ -1,9 +1,12 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from argparse import ArgumentParser
-from libs import LiveStream, Visualization
+from libs import AudioLiveStream, AudioVisualization
 
 def main(args):
 
-    audio = LiveStream(
+    audio = AudioLiveStream(
         sample_rate=args.sample_rate,
         channels=args.channels,
         chunk=args.chunk,
@@ -12,7 +15,7 @@ def main(args):
     audio.start()
 
     if args.visualize:
-        vis = Visualization(audio)
+        vis = AudioVisualization(audio)
         vis.show()
     else:
         try:

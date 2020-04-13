@@ -1,16 +1,19 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
 from argparse import ArgumentParser
-from libs import FileStream, Visualization
+from libs import AudioFileStream, AudioVisualization
 
 def main(args):
 
-    audio = FileStream(
+    audio = AudioFileStream(
         args.filename,
         chunk=args.chunk,
         output_device=args.output_device)
     audio.start()
 
     if args.visualize:
-        vis = Visualization(audio)
+        vis = AudioVisualization(audio)
         vis.show()
     else:
         try:

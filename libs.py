@@ -4,7 +4,6 @@
 import pyaudio
 import wave
 import numpy as np
-import RPi.GPIO as GPIO
 import time
 import matplotlib.pyplot as plt
 from scipy import fftpack
@@ -119,11 +118,6 @@ class AudioLiveStream(object):
     def __init__(self, sample_rate=44100, channels=1, chunk=1024, input_device=None, output_device=None):
         self.format = pyaudio.paInt16
 
-        self.button = 17
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setup(self.button, GPIO.IN)
-        self.btn_state = GPIO.input(self.button)
-
         self.sample_rate = sample_rate
         self.channels = channels
         self.chunk = chunk
@@ -149,14 +143,17 @@ class AudioLiveStream(object):
             frames_per_buffer=self.chunk,
             stream_callback=self.callback)
         self.data = np.zeros(self.chunk)
+        self.record_flag = False
         self.records = []
 
     def callback(self, in_data, frame_count, time_info, status):
         self.data = self.str_to_float(in_data)
-        self.btn_state = GPIO.input(self.button)
-        if self.btn_state:
+
+        if self.record_flag:
+            self.records.append(in_data)
+        else:
             if self.records:
-                timestr = time.strftime('%Y%m%d_%H%M%S') + '.wav'
+                timestr = 'record_' + time.strftime('%Y%m%d_%H%M%S') + '.wav'
                 wavfile = wave.open(timestr, 'wb')
                 wavfile.setnchannels(self.channels)
                 wavfile.setsampwidth(self.pyaudio.get_sample_size(self.format))
@@ -165,8 +162,7 @@ class AudioLiveStream(object):
                 wavfile.close()
                 print('save audio as {}'.format(timestr))
                 self.records = []
-        else:
-            self.records.append(in_data)
+
         return (in_data, pyaudio.paContinue)
 
     def str_to_float(self, data):

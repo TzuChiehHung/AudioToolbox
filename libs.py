@@ -92,7 +92,7 @@ class AudioFileStream(object):
             channels=self.channels,
             output=True,
             output_device_index=self.output_device_index,
-            frames_per_buffer=self.chunk*2,
+            frames_per_buffer=self.chunk,
             stream_callback=self.callback)
         self.data = np.zeros(self.chunk)
 

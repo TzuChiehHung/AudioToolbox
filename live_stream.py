@@ -31,7 +31,6 @@ if __name__ == '__main__':
     parser.add_argument('--chunk', help='chunk size', type=int, default=1024*4)
     parser.add_argument('-v', '--visualize', action='store_true')
 
-
     args = parser.parse_args()
     print(args)
 

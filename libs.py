@@ -45,27 +45,33 @@ class AudioVisualization(object):
         self.ax[2].set_xlim(20, audio.sample_rate/2)
         self.ax[2].set_ylim(-50, 50)
 
+    def update(self):
+        # time domain
+        self.line_t.set_ydata(self.audio.get_int_data())
+
+        # frequency domain
+        _, yf = self.fft(self.audio)
+        self.line_fft.set_ydata(yf)
+
+        # psd
+        _, yp = self.psd(self.audio)
+        self.line_psd.set_ydata(yp)
+
+        self.fig.canvas.draw()
+        self.fig.canvas.flush_events()
+        return self.fig
+
     def show(self):
         plt.show(block=False)
-
         try:
             while self.audio.stream.is_active():
-                # time domain
-                self.line_t.set_ydata(self.audio.get_int_data())
-
-                # frequency domain
-                _, yf = self.fft(self.audio)
-                self.line_fft.set_ydata(yf)
-
-                # psd
-                _, yp = self.psd(self.audio)
-                self.line_psd.set_ydata(yp)
-
-                self.fig.canvas.draw()
-                self.fig.canvas.flush_events()
+                self.update()
             self.audio.stop()
         except KeyboardInterrupt:
             self.audio.stop()
+
+    def stop(self):
+        plt.close('all')
 
     @staticmethod
     def fft(audio):
@@ -178,13 +184,13 @@ class AudioStreamLive(AudioStreamBasic):
             self.records.append(in_data)
         else:
             if self.records:
-                timestr = 'record_' + time.strftime('%Y%m%d_%H%M%S') + '.wav'
-                wavfile = wave.open(timestr, 'wb')
+                fn = 'record_' + time.strftime('%Y%m%d_%H%M%S') + '.wav'
+                wavfile = wave.open(fn, 'wb')
                 wavfile.setnchannels(self.channels)
                 wavfile.setsampwidth(self.pyaudio.get_sample_size(self.format))
                 wavfile.setframerate(self.sample_rate)
                 wavfile.writeframes(b''.join(self.records))
                 wavfile.close()
-                print('save audio as {}'.format(timestr))
+                print('save audio as {}'.format(fn))
                 self.records = []
         return (in_data, pyaudio.paContinue)

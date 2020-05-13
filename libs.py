@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
+import os
 import pyaudio
 import wave
 import numpy as np
@@ -9,12 +10,11 @@ import matplotlib.pyplot as plt
 from scipy import fftpack
 from scipy.signal import hanning, welch
 
-
 class AudioVisualization(object):
 
     def __init__(self, audio):
         self.audio = audio
-        self.fig, self.ax = plt.subplots(3, figsize=(8,6))
+        self.fig, self.ax = plt.subplots(3, figsize=(6.4,4.8))
 
         xt = np.arange(0, audio.chunk)
         yt = np.zeros(audio.chunk)
@@ -171,26 +171,43 @@ class AudioStreamFile(AudioStreamBasic):
 
 class AudioStreamLive(AudioStreamBasic):
 
-    def __init__(self, sample_rate=44100, channels=1, chunk=1024, audio_output=False):
+    def __init__(self, sample_rate=44100, channels=1, chunk=1024, audio_output=False, save_folder='', save_interval=10):
         audio_format = pyaudio.paInt16
         super(AudioStreamLive, self).__init__(audio_format, sample_rate, channels, chunk, audio_input=True, audio_output=audio_output)
-        self.record_flag = False
-        self.records = []
+        self.save_folder = save_folder
+        self.save_interval = save_interval
+        self._rec_flag = False
+        self._records = []
+        self._rec_timer = time.time()
+
+    def set_rec(self, state):
+        if state == self._rec_flag:
+            return
+        if state:
+            print('audio recording...')
+            self._rec_timer = time.time()
+        else:
+            print('stop recording.')
+        self._rec_flag = state
+
+    def save_wav(self):
+        fn = os.path.join(self.save_folder, 'record_' + time.strftime('%Y%m%d_%H%M%S') + '.wav')
+        wavfile = wave.open(fn, 'wb')
+        wavfile.setnchannels(self.channels)
+        wavfile.setsampwidth(self.pyaudio.get_sample_size(self.format))
+        wavfile.setframerate(self.sample_rate)
+        wavfile.writeframes(b''.join(self._records))
+        wavfile.close()
+        print('save audio as {}'.format(fn))
 
     def callback(self, in_data, frame_count, time_info, status):
         self._data = in_data
 
-        if self.record_flag:
-            self.records.append(in_data)
-        else:
-            if self.records:
-                fn = 'record_' + time.strftime('%Y%m%d_%H%M%S') + '.wav'
-                wavfile = wave.open(fn, 'wb')
-                wavfile.setnchannels(self.channels)
-                wavfile.setsampwidth(self.pyaudio.get_sample_size(self.format))
-                wavfile.setframerate(self.sample_rate)
-                wavfile.writeframes(b''.join(self.records))
-                wavfile.close()
-                print('save audio as {}'.format(fn))
-                self.records = []
+        if self._rec_flag:
+            self._records.append(in_data)
+        # else:
+            if self._records and time.time() - self._rec_timer > self.save_interval:
+                self.save_wav()
+                self._records = []
+                self._rec_timer = time.time()
         return (in_data, pyaudio.paContinue)
